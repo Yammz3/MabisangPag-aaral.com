@@ -1,0 +1,330 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ICSB-ICSM School Clinic Data Tracking System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .bar-fill {
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Official Hard-Copy Print Rules: Prints ONLY the Student Health Slip cleanly on A4/Letter */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printSlipModal, #printSlipModal * {
+        visibility: visible !important;
+      }
+      #printSlipModal {
+        position: fixed !important;
+        inset: 0 !important;
+        background: #ffffff !important;
+        padding: 0 !important;
+        display: block !important;
+      }
+      #printSlipCard {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- ==================== TOP NAVIGATION & MINIMIZED ROLE ACCESS BAR ==================== -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <!-- Brand / School Clinic Title -->
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-teal-700 text-white flex items-center justify-center shrink-0 shadow-xs">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+        </div>
+        <div class="truncate">
+          <h1 class="text-sm sm:text-base font-bold text-slate-900 truncate">ICSB-ICSM School Clinic</h1>
+          <p class="text-[11px] text-slate-500 truncate">Private Student Health & Attendance Tracking</p>
+        </div>
+      </div>
+
+      <!-- Desktop Navigation Tabs -->
+      <nav class="hidden md:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+        <button id="tabBtnLog" onclick="switchTab('log')"
+          class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-teal-800 shadow-sm transition">
+          Clinic Log & Entry
+        </button>
+        <button id="tabBtnCalendar" onclick="switchTab('calendar')"
+          class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+          Daily Calendar
+        </button>
+        <button id="tabBtnAnalytics" onclick="switchTab('analytics')"
+          class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+          Analytics Dashboard
+        </button>
+        <button id="tabBtnExport" onclick="switchTab('export')"
+          class="nav-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+          Yearly Export & Backup
+        </button>
+      </nav>
+
+      <!-- Minimized Role Switcher Pill (Nurse vs Principal) -->
+      <div class="flex items-center gap-2 shrink-0">
+        <span id="activeRoleBadge"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-900 text-xs font-semibold">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          School Nurse
+        </span>
+        <button onclick="openRoleModal()"
+          class="px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition flex items-center gap-1">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+          Switch Role
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Bar -->
+    <div class="flex md:hidden border-t border-slate-200 bg-slate-50 px-3 py-1.5 gap-1.5 overflow-x-auto">
+      <button id="mobTabLog" onclick="switchTab('log')" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold bg-white text-teal-800 shadow-xs text-center">
+        Clinic Log
+      </button>
+      <button id="mobTabCalendar" onclick="switchTab('calendar')" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-600 text-center">
+        Calendar
+      </button>
+      <button id="mobTabAnalytics" onclick="switchTab('analytics')" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-600 text-center">
+        Analytics
+      </button>
+      <button id="mobTabExport" onclick="switchTab('export')" class="flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-600 text-center">
+        Export CSV
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== URGENT HEALTH WARNING STRIP ==================== -->
+  <div id="urgentBanner" class="hidden bg-red-600 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex items-center gap-2 font-semibold">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        </svg>
+        <span id="urgentBannerText">High BP / Urgent Alerts</span>
+      </div>
+      <button onclick="filterByUrgent()" class="underline font-semibold hover:text-red-100">
+        View Urgent Cases →
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- ==================== TAB 1: CLINIC LOG & DUAL-MODE ENTRY ==================== -->
+    <section id="viewLog" class="space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- LEFT COLUMN (5 cols): DUAL-MODE NURSE DATA ENTRY FORM -->
+        <div id="nurseEntryColumn" class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/70 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-sm font-bold text-slate-900">New Student Health Record</h2>
+                <p class="text-xs text-slate-500">Select record type below to switch clinical format</p>
+              </div>
+              <span class="px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 border border-teal-200 text-[11px] font-semibold">
+                Nurse Entry
+              </span>
+            </div>
+
+            <!-- Dual-Mode Switcher (Clinic Visit vs Annual Health Checkup) -->
+            <div class="grid grid-cols-2 gap-1.5 bg-slate-200/70 p-1 rounded-xl">
+              <button type="button" id="modeBtnVisit" onclick="setFormMode('Clinic Visit')"
+                class="py-2 px-3 rounded-lg text-xs font-bold bg-white text-teal-800 shadow-xs transition">
+                Clinic Visit
+              </button>
+              <button type="button" id="modeBtnCheckup" onclick="setFormMode('Annual Health Checkup')"
+                class="py-2 px-3 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+                Annual Health Checkup
+              </button>
+            </div>
+          </div>
+
+          <form id="recordForm" onsubmit="handleRecordSubmit(event)" class="p-5 space-y-3.5">
+            <!-- Student Name -->
+            <div>
+              <label for="studentName" class="block text-xs font-semibold text-slate-700 mb-1">Student Full Name *</label>
+              <input id="studentName" type="text" required placeholder="e.g., Juan Miguel Dela Cruz"
+                class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-600" />
+            </div>
+
+            <!-- Grade, Section & Date/Time -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div>
+                <label for="studentGrade" class="block text-xs font-semibold text-slate-700 mb-1">Grade *</label>
+                <select id="studentGrade" required
+                  class="w-full px-2.5 py-2 text-sm rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-teal-600">
+                  <option value="Grade 7">Grade 7</option>
+                  <option value="Grade 8">Grade 8</option>
+                  <option value="Grade 9">Grade 9</option>
+                  <option value="Grade 10">Grade 10</option>
+                  <option value="Grade 11" selected>Grade 11</option>
+                  <option value="Grade 12">Grade 12</option>
+                </select>
+              </div>
+              <div>
+                <label for="studentSection" class="block text-xs font-semibold text-slate-700 mb-1">Section *</label>
+                <input id="studentSection" type="text" required placeholder="e.g., STEM A"
+                  class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-600" />
+              </div>
+              <div>
+                <label for="visitDateTime" class="block text-xs font-semibold text-slate-700 mb-1">Date & Time *</label>
+                <input id="visitDateTime" type="datetime-local" required
+                  class="w-full px-2.5 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-600" />
+              </div>
+            </div>
+
+            <!-- Dedicated Biometrics Section: Birth Date, Auto-Age, Height & Weight -->
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-600">Student Biometrics & Anthropometrics</span>
+                <span id="liveBmiBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-200 text-slate-700">BMI: --</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div>
+                  <label for="birthDate" class="block text-[11px] font-semibold text-slate-700 mb-1">Birth Date *</label>
+                  <input id="birthDate" type="date" required onchange="updateCalculatedMetrics()"
+                    class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-teal-600" />
+                </div>
+                <div>
+                  <label for="studentAge" class="block text-[11px] font-semibold text-slate-700 mb-1">Age (Auto)</label>
+                  <input id="studentAge" type="text" readonly placeholder="-- yrs"
+                    class="w-full px-2.5 py-1.5 text-xs font-bold text-teal-800 rounded-lg border border-slate-200 bg-slate-100" />
+                </div>
+                <div>
+                  <label for="studentHeight" class="block text-[11px] font-semibold text-slate-700 mb-1">Height (cm)</label>
+                  <input id="studentHeight" type="number" step="0.1" min="50" max="250" oninput="updateCalculatedMetrics()" placeholder="165"
+                    class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-teal-600" />
+                </div>
+                <div>
+                  <label for="studentWeight" class="block text-[11px] font-semibold text-slate-700 mb-1">Weight (kg)</label>
+                  <input id="studentWeight" type="number" step="0.1" min="15" max="250" oninput="updateCalculatedMetrics()" placeholder="55"
+                    class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-teal-600" />
+                </div>
+              </div>
+            </div>
+
+            <!-- ==================== MODE A: CLINIC VISIT FIELDS ==================== -->
+            <div id="clinicVisitFields" class="space-y-3">
+              <div>
+                <label for="visitReason" class="block text-xs font-semibold text-slate-700 mb-1">Reason for Clinic Visit *</label>
+                <select id="visitReason" onchange="toggleCustomReason()"
+                  class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-teal-600">
+                  <option value="Headache">Headache</option>
+                  <option value="Fever / Chills">Fever / Chills</option>
+                  <option value="Stomachache / Cramps">Stomachache / Cramps</option>
+                  <option value="High Blood Pressure">High Blood Pressure</option>
+                  <option value="Dizziness / Fatigue">Dizziness / Fatigue</option>
+                  <option value="Dysmenorrhea">Dysmenorrhea</option>
+                  <option value="Respiratory / Cough">Respiratory / Cough</option>
+                  <option value="Minor Wound / Sprain">Minor Wound / Sprain</option>
+                  <option value="Other">Other (Specify below)</option>
+                </select>
+              </div>
+
+              <div id="customReasonWrap" class="hidden">
+                <label for="customReasonInput" class="block text-xs font-semibold text-slate-700 mb-1">Specify Reason *</label>
+                <input id="customReasonInput" type="text" placeholder="Enter specific complaint"
+                  class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-600" />
+              </div>
+
+              <div>
+                <label for="currentSituation" class="block text-xs font-semibold text-slate-700 mb-1">Current Situation / Nurse Assessment *</label>
+                <textarea id="currentSituation" rows="2" required placeholder="e.g., Temp 37.9°C, BP 135/85 mmHg, resting at clinic bed..."
+                  class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-600"></textarea>
+              </div>
+
+              <div>
+                <label for="medicineGiven" class="block text-xs font-semibold text-slate-700 mb-1">Medicine / First Aid Given</label>
+                <input id="medicineGiven" type="text" placeholder="e.g., Paracetamol 500mg, Cold Compress"
+                  class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-600" />
+              </div>
+            </div>
+
+            <!-- ==================== MODE B: ANNUAL HEALTH CHECKUP DIAGNOSIS FIELDS ==================== -->
+            <div id="annualCheckupFields" class="hidden space-y-3 p-3.5 rounded-xl bg-indigo-50/50 border border-indigo-200/80">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-indigo-950">Annual Clinical Examination & Vitals</span>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">Official Diagnosis</span>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div>
+                  <label for="checkupBp" class="block text-[11px] font-semibold text-slate-700 mb-1">Blood Pressure</label>
+                  <input id="checkupBp" type="text" placeholder="120/80"
+                    class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+                </div>
+                <div>
+                  <label for="checkupTemp" class="block text-[11px] font-semibold text-slate-700 mb-1">Temp (°C)</label>
+                  <input id="checkupTemp" type="text" placeholder="36.6°C"
+                    class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+                </div>
+                <div>
+                  <label for="checkupPulse" class="block text-[11px] font-semibold text-slate-700 mb-1">Pulse (bpm)</label>
+                  <input id="checkupPulse" type="text" placeholder="78 bpm"
+                    class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+                </div>
+                <div>
+                  <label for="checkupVision" class="block text-[11px] font-semibold text-slate-700 mb-1">Visual Acuity</label>
+                  <input id="checkupVision" type="text" placeholder="20/20"
+                    class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+                </div>
+              </div>
+
+              <div>
+                <label for="checkupDentalHearing" class="block text-xs font-semibold text-slate-700 mb-1">Dental, ENT & Physical Findings</label>
+                <input id="checkupDentalHearing" type="text" placeholder="e.g., Normal hearing, 1 dental caries noted, clear lungs"
+                  class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+              </div>
+
+              <div>
+                <label for="clinicalDiagnosis" class="block text-xs font-semibold text-slate-700 mb-1">Clinical Diagnosis / Impression *</label>
+                <textarea id="clinicalDiagnosis" rows="2" placeholder="e.g., Clinically healthy; Stage 1 Pre-hypertension; Mild myopia..."
+                  class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600"></textarea>
+              </div>
+
+              <div>
+                <label for="clinicalRecommendations" class="block text-xs font-semibold text-slate-700 mb-1">Medical Recommendations / Clearance</label>
+                <input id="clinicalRecommendations" type="text" placeholder="e.g., Cleared for PE; Advise optometrist visit"
+                  class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+              </div>
+            </div>
+
+            <!-- Shared Health Warning & Parent Contact -->
+            <div>
+              <label for="healthWarning" class="block text-xs font-semibold text-slate-700 mb-1">Health Warning / Clinical Flag</label>
+              <select id="healthWarning"
+                class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-teal-600">
+                <option value="Normal">Normal / Routine</option>
+                <option value="Watchlist">Watchlist / Monitor</option>
+                <option value="High BP / Urgent">High BP / Urgent Warning</option>
+              </select>
+            </div>
+
+            <div
